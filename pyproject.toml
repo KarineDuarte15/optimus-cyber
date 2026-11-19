@@ -73,7 +73,8 @@ quote-style = "double"
 python_version = "3.11"
 strict = true
 files = ["src", "tests"]
-mypy_path = "src"
+mypy_path = ["src", "tests"]
+explicit_package_bases = true
 plugins = ["pydantic.mypy"]
 warn_unreachable = true
 

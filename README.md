@@ -4,8 +4,8 @@ Agente de engenharia de software executado no terminal. Ele diagnostica erros, e
 propõe correções e automatiza tarefas de desenvolvimento, sempre por meio de ferramentas controladas
 e com aprovação humana para ações de risco.
 
-> **Status:** Etapa 02 — scaffold. A CLI expõe apenas `--version` e `status`. Os agentes e
-> comandos de engenharia chegam nas próximas etapas.
+> **Status:** Etapa 03 — CLI. Todos os comandos existem, validam a entrada e mostram o plano
+> de execução. A execução real pelos agentes chega nas próximas etapas.
 
 ## Requisitos
 
@@ -48,11 +48,29 @@ Preencha `GEMINI_API_KEY` (e `ANTHROPIC_API_KEY`, se for usar o Claude). O `.env
 
 ## Uso
 
-```bash
-optimus --version
-optimus status            # configuração ativa, sem revelar segredos
-python -m optimus_cyber --help
-```
+| Comando | O que faz |
+| --- | --- |
+| `optimus ask "pergunta"` | Pergunta sobre o projeto |
+| `optimus doctor [--log ARQ \| --cmd CMD]` | Diagnostica um erro |
+| `optimus explain "erro" \| --log ARQ` | Explica um erro |
+| `optimus fix --issue TEXTO \| --log ARQ [--dry-run] [--yes]` | Corrige com patch controlado |
+| `optimus review [CAMINHOS...] [--focus F] [--staged]` | Revisa código |
+| `optimus test [-k FILTRO] [--coverage] [-x]` | Executa e interpreta testes |
+| `optimus commit [--type T] [--scope S]` | Gera commit semântico |
+| `optimus docs [--target readme\|changelog\|api\|all]` | Atualiza documentação |
+| `optimus project [--depth N]` | Explica a arquitetura do projeto |
+| `optimus status` | Mostra a configuração, sem revelar segredos |
+
+Opções globais (antes do comando): `--path/-C PASTA`, `--debug`, `--no-color`, `--version/-V`,
+`--help/-h`. Exemplo: `optimus -C ../meu-projeto doctor --log logs/app.log`.
+
+| Exit code | Significado |
+| --- | --- |
+| 0 | Sucesso |
+| 1 | Erro inesperado (use `--debug` para detalhes) |
+| 2 | Uso incorreto ou entrada inválida |
+| 3 | Configuração inválida |
+| 130 | Cancelado com Ctrl+C |
 
 No Windows, se o comando `optimus` não for encontrado, adicione a pasta `Scripts` do Python ao
 `PATH` ou use `python -m optimus_cyber`.

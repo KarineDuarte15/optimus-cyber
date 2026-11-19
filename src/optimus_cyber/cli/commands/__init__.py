@@ -1,1 +1,1 @@
-"""Comandos da CLI (doctor, explain, ask...). Implementados a partir da Etapa 05."""
+"""Comandos da CLI. Cada módulo expõe uma função registrada em ``cli/app.py``."""

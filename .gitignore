@@ -1,0 +1,37 @@
+# Segredos — nunca versionar
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Configuração local
+optimus.toml
+.optimus/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Ferramentas
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Ambientes (caso alguém use)
+.venv/
+venv/
+
+# Editores e sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

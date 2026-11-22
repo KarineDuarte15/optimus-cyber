@@ -63,7 +63,6 @@ def log_file(tmp_path: Path) -> Path:
 @pytest.mark.parametrize(
     ("args", "mode"),
     [
-        (["ask", "onde fica a autenticação?"], "Modo Pergunta"),
         (["doctor"], "Modo Diagnóstico"),
         (["doctor", "--cmd", "pytest"], "Modo Diagnóstico"),
         (["explain", "KeyError: 'id'"], "Modo Explicação"),

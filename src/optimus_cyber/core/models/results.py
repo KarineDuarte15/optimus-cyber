@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import Field
 
 from optimus_cyber.core.models.base import DomainModel
+from optimus_cyber.core.models.llm import LLMResponse
 from optimus_cyber.core.models.requests import Intent
 
 
@@ -47,3 +48,4 @@ class CommandOutcome(DomainModel):
     summary: str
     steps: tuple[PlannedStep, ...] = ()
     notes: tuple[str, ...] = ()
+    response: LLMResponse | None = None

@@ -11,6 +11,8 @@ from contextlib import contextmanager
 
 from rich import box
 from rich.console import Console, Group
+from rich.markdown import Markdown
+from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -18,7 +20,7 @@ from rich.text import Text
 from optimus_cyber.cli.ui.console import build_consoles
 from optimus_cyber.cli.ui.labels import APP_TITLE
 from optimus_cyber.cli.ui.theme import RISK_LABELS
-from optimus_cyber.core.models import CommandOutcome, OutcomeStatus
+from optimus_cyber.core.models import CommandOutcome, LLMResponse, OutcomeStatus
 
 
 class Presenter:
@@ -76,13 +78,37 @@ class Presenter:
                 risk = Text(RISK_LABELS[step.risk], style=f"risk.{step.risk.value}")
                 table.add_row(str(step.order), step.agent, step.description, risk)
             self.console.print(table)
+        if outcome.response is not None:
+            self.answer(outcome.response)
         if outcome.status is OutcomeStatus.PREVIEW:
             body = Group(*(Text(note) for note in outcome.notes))
             self.console.print(Panel(body, title="Em desenvolvimento", border_style="warning"))
-        elif outcome.status is OutcomeStatus.COMPLETED:
-            self.success("Concluído.")
+            return
+        for note in outcome.notes:
+            self.console.print(f"[hint]{note}[/]")
+        if outcome.status is OutcomeStatus.COMPLETED:
+            if outcome.response is None:
+                self.success("Concluído.")
         else:
             self.error("O comando terminou com falha.")
+
+    def answer(self, response: LLMResponse) -> None:
+        """Resposta do modelo em Markdown, com metadados da chamada."""
+        self.console.print(
+            Panel(Markdown(response.content), title="Resposta", border_style="brand")
+        )
+        usage = response.usage
+        tokens = f"{usage.input_tokens} → {usage.output_tokens} tokens"
+        if usage.reasoning_tokens:
+            tokens += f" (+{usage.reasoning_tokens} de raciocínio)"
+        parts = [response.provider, response.model, tokens, f"{response.latency_ms / 1000:.1f} s"]
+        if response.attempts > 1:
+            parts.append(f"{response.attempts} tentativas")
+        self.console.print(f"[muted]{escape(' · '.join(parts))}[/]")
+        if response.truncated:
+            self.warning(
+                "A resposta foi cortada pelo limite de tokens (OPTIMUS_MAX_OUTPUT_TOKENS)."
+            )
 
     # ------------------------------------------------------------ mensagens
     def success(self, message: str) -> None:

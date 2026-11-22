@@ -17,7 +17,7 @@ MODE_LABELS: dict[Intent, str] = {
 }
 
 WORKING_LABELS: dict[Intent, str] = {
-    Intent.ASK: "Preparando a pergunta...",
+    Intent.ASK: "Consultando o modelo...",
     Intent.DIAGNOSE: "Analisando o projeto...",
     Intent.EXPLAIN: "Analisando o erro...",
     Intent.FIX: "Preparando o plano de correção...",

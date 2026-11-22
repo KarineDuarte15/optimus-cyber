@@ -12,7 +12,9 @@ from optimus_cyber.config.settings import (
     LogLevel,
     ProviderName,
     get_settings,
+    load_settings,
 )
+from optimus_cyber.core.errors import ConfigError
 
 FAKE_KEY = "fake-key-123-nao-real"
 
@@ -21,7 +23,9 @@ def test_defaults() -> None:
     settings = AppSettings()
     assert settings.primary_provider is ProviderName.GEMINI
     assert settings.secondary_provider is ProviderName.CLAUDE
-    assert settings.primary_model == "gemini-2.5-pro"
+    assert settings.primary_model is None
+    assert settings.model_for(ProviderName.GEMINI) == "gemini-2.5-pro"
+    assert settings.model_for(ProviderName.CLAUDE) == "claude-sonnet-5-5"
     assert settings.log_level is LogLevel.INFO
     assert settings.gemini_api_key is None
 
@@ -75,6 +79,37 @@ def test_settings_are_immutable() -> None:
     settings = AppSettings()
     with pytest.raises(ValidationError):
         settings.primary_model = "outro"  # type: ignore[misc]  # violação intencional
+
+
+def test_short_aliases(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPTIMUS_PROVIDER", "claude")
+    monkeypatch.setenv("OPTIMUS_MODEL", "claude-opus-5-5")
+    monkeypatch.setenv("OPTIMUS_SECONDARY_MODEL", "gemini-2.5-flash")
+    monkeypatch.setenv("OPTIMUS_SECONDARY_PROVIDER", "gemini")
+    settings = AppSettings()
+    assert settings.primary_provider is ProviderName.CLAUDE
+    assert settings.model_for(ProviderName.CLAUDE) == "claude-opus-5-5"
+    assert settings.model_for(ProviderName.GEMINI) == "gemini-2.5-flash"
+
+
+def test_dotenv_inline_comments(tmp_path: Path) -> None:
+    (tmp_path / ".env").write_text(
+        "OPTIMUS_TEMPERATURE=0.7          # comentário\n", encoding="utf-8"
+    )
+    assert AppSettings().temperature == 0.7
+
+
+def test_load_settings_hides_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPTIMUS_TEMPERATURE", "valor-estranho-123")
+    with pytest.raises(ConfigError) as exc:
+        load_settings()
+    assert "OPTIMUS_TEMPERATURE" in exc.value.message
+    assert "valor-estranho-123" not in exc.value.message
+
+
+def test_secret_values_lists_configured_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", FAKE_KEY)
+    assert AppSettings().secret_values() == [FAKE_KEY]
 
 
 def test_get_settings_is_cached() -> None:

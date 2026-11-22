@@ -24,6 +24,8 @@ dependencies = [
     "rich>=13.7",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
+    "google-genai>=3.6",
+    "anthropic>=2.11",
 ]
 
 [project.optional-dependencies]
@@ -81,7 +83,6 @@ warn_unreachable = true
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
-warn_required_dynamic_aliases = true
 
 # ---------------------------------------------------------------- pytest
 [tool.pytest.ini_options]

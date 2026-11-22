@@ -1,4 +1,5 @@
-"""Interfaces abstratas (LLMProvider, Agent, Tool, Memory, Orchestrator, Validator).
+"""Interfaces abstratas do núcleo."""
 
-Implementadas na Etapa 03.
-"""
+from optimus_cyber.core.interfaces.llm import LLMProvider, ProviderCapabilities
+
+__all__ = ["LLMProvider", "ProviderCapabilities"]

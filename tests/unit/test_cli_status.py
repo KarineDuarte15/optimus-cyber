@@ -31,4 +31,5 @@ def test_status_with_invalid_config(monkeypatch: pytest.MonkeyPatch) -> None:
     result = runner.invoke(app, ["status"])
     assert result.exit_code == 3
     assert "Configuração inválida" in result.output
+    assert "OPTIMUS_PRIMARY_PROVIDER" in result.output or "OPTIMUS_PROVIDER" in result.output
     assert "invalido" not in result.output

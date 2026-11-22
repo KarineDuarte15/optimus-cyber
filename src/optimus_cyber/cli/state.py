@@ -9,7 +9,9 @@ import typer
 
 from optimus_cyber.cli.router import CommandRouter
 from optimus_cyber.cli.ui.presenter import Presenter
-from optimus_cyber.orchestration.stub import StubOrchestrator
+from optimus_cyber.config.settings import get_settings
+from optimus_cyber.llm.service import LLMService
+from optimus_cyber.orchestration.orchestrator import DefaultOrchestrator
 
 
 @dataclass(frozen=True)
@@ -26,7 +28,9 @@ class AppState:
         """Composição padrão (produção)."""
         return cls(
             presenter=Presenter.create(no_color=no_color),
-            router=CommandRouter(StubOrchestrator()),
+            router=CommandRouter(
+                DefaultOrchestrator(lambda: LLMService.from_settings(get_settings()))
+            ),
             workspace=workspace,
             debug=debug,
         )

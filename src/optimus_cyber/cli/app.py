@@ -25,6 +25,10 @@ from optimus_cyber.cli.commands.status import status
 from optimus_cyber.cli.commands.testing import run_tests
 from optimus_cyber.cli.state import AppState
 from optimus_cyber.cli.ui.presenter import Presenter
+from optimus_cyber.config.settings import get_settings
+from optimus_cyber.core.errors import ConfigError
+from optimus_cyber.observability.logging import configure_logging
+from optimus_cyber.security.redaction import SecretRedactor
 
 app = typer.Typer(
     name="optimus",
@@ -92,11 +96,27 @@ def root(
     ] = False,
 ) -> None:
     """Monta o estado da execução (ou reaproveita um estado injetado em testes)."""
+    _setup_logging(debug)
     workspace = path or Path.cwd()
     if isinstance(ctx.obj, AppState):
         ctx.obj = replace(ctx.obj, workspace=workspace, debug=debug or ctx.obj.debug)
     else:
         ctx.obj = AppState.default(workspace=workspace, debug=debug, no_color=no_color)
+
+
+def _setup_logging(debug: bool) -> None:
+    """Configura logs JSON com redação. Config inválida é tratada pelo comando."""
+    try:
+        settings = get_settings()
+    except ConfigError:
+        configure_logging(level="INFO", redactor=SecretRedactor(), debug=debug)
+        return
+    configure_logging(
+        level=settings.log_level.value,
+        redactor=SecretRedactor(settings.secret_values()),
+        log_file=settings.log_file,
+        debug=debug,
+    )
 
 
 def main() -> None:

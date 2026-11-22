@@ -4,8 +4,8 @@ Agente de engenharia de software executado no terminal. Ele diagnostica erros, e
 propõe correções e automatiza tarefas de desenvolvimento, sempre por meio de ferramentas controladas
 e com aprovação humana para ações de risco.
 
-> **Status:** Etapa 03 — CLI. Todos os comandos existem, validam a entrada e mostram o plano
-> de execução. A execução real pelos agentes chega nas próximas etapas.
+> **Status:** Etapa 04 — LLM. `optimus ask` já consulta o Gemini (ou o Claude). Os demais
+> comandos validam a entrada e mostram o plano; a execução pelos agentes vem nas próximas etapas.
 
 ## Requisitos
 
@@ -33,24 +33,43 @@ pipx install .
 cp .env.example .env      # PowerShell: Copy-Item .env.example .env
 ```
 
-Preencha `GEMINI_API_KEY` (e `ANTHROPIC_API_KEY`, se for usar o Claude). O `.env` está no
-`.gitignore` e nunca deve ser versionado. Variáveis do sistema têm prioridade sobre o `.env`.
+Preencha a chave do provider escolhido. O `.env` está no `.gitignore` e nunca deve ser
+versionado. Variáveis do sistema têm prioridade sobre o `.env`.
 
 | Variável | Padrão | Descrição |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | — | Chave do Gemini |
 | `ANTHROPIC_API_KEY` | — | Chave do Claude |
-| `OPTIMUS_PRIMARY_PROVIDER` | `gemini` | `gemini` ou `claude` |
-| `OPTIMUS_PRIMARY_MODEL` | `gemini-2.5-pro` | Modelo do provider principal |
-| `OPTIMUS_SECONDARY_PROVIDER` | `claude` | Provider de fallback |
+| `OPTIMUS_PROVIDER` | `gemini` | `gemini` ou `claude` |
+| `OPTIMUS_MODEL` | padrão do provider | `gemini-2.5-pro` / `claude-sonnet-5-5` |
+| `OPTIMUS_TEMPERATURE` | `0.2` | 0 a 2 (o Claude atual não aceita e ignora) |
+| `OPTIMUS_MAX_OUTPUT_TOKENS` | `8192` | Limite da resposta (no Gemini 2.5 inclui o raciocínio) |
+| `OPTIMUS_REQUEST_TIMEOUT_SECONDS` | `120` | Timeout por chamada |
+| `OPTIMUS_MAX_RETRIES` | `3` | Tentativas extras em falhas temporárias (429, 5xx, rede) |
+| `OPTIMUS_RETRY_BASE_DELAY_SECONDS` | `1` | Base do backoff exponencial |
 | `OPTIMUS_LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
-| `OPTIMUS_REQUEST_TIMEOUT_SECONDS` | `120` | Timeout das chamadas ao LLM |
+| `OPTIMUS_LOG_FILE` | — | Arquivo de log JSON; sem ele, logs só com `--debug` |
+
+Os logs nunca incluem chaves nem o conteúdo de perguntas e respostas: registram provider,
+modelo, tokens, latência e erros, sempre passando por redação de segredos.
+
+## Uso da camada de LLM no código
+
+```python
+from optimus_cyber.llm import generate
+
+response = await generate("Explique: KeyError 'user_id'", system="Seja breve.")
+print(response.content, response.usage.total, response.finish_reason)
+```
+
+O restante da aplicação conhece só `LLMProvider` e `LLMResponse`; os SDKs ficam isolados em
+`llm/gemini.py` e `llm/claude.py`. Um provider novo é registrado com `register_provider`.
 
 ## Uso
 
 | Comando | O que faz |
 | --- | --- |
-| `optimus ask "pergunta"` | Pergunta sobre o projeto |
+| `optimus ask "pergunta"` | Pergunta ao modelo (ainda sem ler o projeto) |
 | `optimus doctor [--log ARQ \| --cmd CMD]` | Diagnostica um erro |
 | `optimus explain "erro" \| --log ARQ` | Explica um erro |
 | `optimus fix --issue TEXTO \| --log ARQ [--dry-run] [--yes]` | Corrige com patch controlado |
@@ -69,7 +88,8 @@ Opções globais (antes do comando): `--path/-C PASTA`, `--debug`, `--no-color`,
 | 0 | Sucesso |
 | 1 | Erro inesperado (use `--debug` para detalhes) |
 | 2 | Uso incorreto ou entrada inválida |
-| 3 | Configuração inválida |
+| 3 | Configuração inválida ou chave ausente |
+| 4 | Erro do provider de LLM (chave recusada, cota, indisponível) |
 | 130 | Cancelado com Ctrl+C |
 
 No Windows, se o comando `optimus` não for encontrado, adicione a pasta `Scripts` do Python ao
@@ -84,8 +104,8 @@ python -m ruff format .   # formatação
 python -m mypy            # tipagem estrita
 ```
 
-Testes que chamam APIs reais usam o marcador `live` e ficam desligados por padrão:
-`python -m pytest -m live`.
+Testes que chamam APIs reais usam o marcador `live` e ficam desligados por padrão. Com a
+chave no `.env`: `python -m pytest -m live --no-cov` (sem chave, eles são pulados).
 
 ## Estrutura
 

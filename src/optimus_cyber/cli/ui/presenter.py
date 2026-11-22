@@ -101,7 +101,10 @@ class Presenter:
         tokens = f"{usage.input_tokens} → {usage.output_tokens} tokens"
         if usage.reasoning_tokens:
             tokens += f" (+{usage.reasoning_tokens} de raciocínio)"
-        parts = [response.provider, response.model, tokens, f"{response.latency_ms / 1000:.1f} s"]
+        model = response.model
+        if response.model_redirected:
+            model = f"{response.requested_model} → {response.model}"
+        parts = [response.provider, model, tokens, f"{response.latency_ms / 1000:.1f} s"]
         if response.attempts > 1:
             parts.append(f"{response.attempts} tentativas")
         self.console.print(f"[muted]{escape(' · '.join(parts))}[/]")

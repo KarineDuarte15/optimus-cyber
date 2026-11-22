@@ -24,7 +24,7 @@ def test_defaults() -> None:
     assert settings.primary_provider is ProviderName.GEMINI
     assert settings.secondary_provider is ProviderName.CLAUDE
     assert settings.primary_model is None
-    assert settings.model_for(ProviderName.GEMINI) == "gemini-2.5-pro"
+    assert settings.model_for(ProviderName.GEMINI) == "gemini-3.5-flash"
     assert settings.model_for(ProviderName.CLAUDE) == "claude-sonnet-5-5"
     assert settings.log_level is LogLevel.INFO
     assert settings.gemini_api_key is None

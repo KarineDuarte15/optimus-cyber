@@ -54,7 +54,7 @@ def test_creates_gemini_with_retry(monkeypatch: pytest.MonkeyPatch) -> None:
     provider = create_provider(settings)
     assert isinstance(provider, RetryingProvider)
     assert isinstance(provider.inner, GeminiProvider)
-    assert provider.model == "gemini-2.5-pro"
+    assert provider.model == "gemini-3.5-flash"
 
 
 def test_provider_env_switches_to_claude(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -45,7 +45,7 @@ def handle_errors(func: Callable[P, None]) -> Callable[P, None]:
             raise
         except OptimusError as exc:
             presenter, _ = _resolve(ctx)
-            presenter.error(exc.message, hint=exc.hint)
+            presenter.error(exc.display_message(), hint=exc.hint)
             raise typer.Exit(code=exc.exit_code) from exc
         except KeyboardInterrupt as exc:
             presenter, _ = _resolve(ctx)

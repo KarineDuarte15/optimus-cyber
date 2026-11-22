@@ -19,6 +19,10 @@ class OptimusError(Exception):
         self.message = message
         self.hint = hint
 
+    def display_message(self) -> str:
+        """Texto mostrado ao usuário (subclasses podem enriquecer)."""
+        return self.message
+
 
 class InputError(OptimusError):
     """Entrada do usuário inválida após o parsing dos argumentos."""
@@ -80,6 +84,15 @@ class ProviderTransientError(ProviderError):
     ) -> None:
         super().__init__(message, provider=provider, status_code=status_code, hint=hint)
         self.retry_after_seconds = retry_after_seconds
+        self.attempts = 1
+        self.elapsed_seconds: float | None = None
+
+    def display_message(self) -> str:
+        """Inclui quantas tentativas foram feitas e quanto tempo levou."""
+        if self.attempts <= 1:
+            return self.message
+        elapsed = f" em {_format_duration(self.elapsed_seconds)}" if self.elapsed_seconds else ""
+        return f"{self.message} Falhou após {self.attempts} tentativas{elapsed}."
 
 
 class ProviderRateLimitError(ProviderTransientError):
@@ -92,3 +105,10 @@ class ProviderTimeoutError(ProviderTransientError):
 
 class ProviderUnavailableError(ProviderTransientError):
     """Erro de servidor (5xx), sobrecarga ou falha de conexão."""
+
+
+def _format_duration(seconds: float) -> str:
+    if seconds < 60:
+        return f"{seconds:.0f} s"
+    minutes, rest = divmod(round(seconds), 60)
+    return f"{minutes} min {rest} s" if rest else f"{minutes} min"

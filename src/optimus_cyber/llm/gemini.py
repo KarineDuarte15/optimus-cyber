@@ -29,6 +29,12 @@ from optimus_cyber.llm.config import ProviderConfig
 
 PROVIDER_NAME = "gemini"
 
+MODELS_HINT = "Para ver os modelos disponíveis, consulte a seção 'Modelos' do README."
+UNAVAILABLE_HINT = (
+    "O modelo pode estar sobrecarregado. Tente de novo em instantes ou use outro "
+    "modelo em OPTIMUS_MODEL (ex.: gemini-3.5-flash)."
+)
+
 _ROLES: dict[Role, str] = {Role.USER: "user", Role.ASSISTANT: "model"}
 
 _FINISH: dict[str, FinishReason] = {
@@ -124,11 +130,12 @@ class GeminiProvider(SDKProvider):
             ),
             provider=PROVIDER_NAME,
             model=raw.model_version or self.model,
+            requested_model=self.model,
         )
 
     def _translate_error(self, exc: Exception) -> ProviderError:
         if isinstance(exc, genai_errors.APIError):
-            return _from_status(exc.code, exc.status)
+            return _from_status(exc.code, exc.status, self.model)
         return super()._translate_error(exc)
 
 
@@ -136,7 +143,7 @@ def _enum_name(value: object) -> str:
     return str(getattr(value, "name", value))
 
 
-def _from_status(code: int | None, status: str | None) -> ProviderError:
+def _from_status(code: int | None, status: str | None, model: str) -> ProviderError:
     label = f"HTTP {code}" + (f" {status}" if status else "")
     if code in (401, 403):
         return ProviderAuthError(
@@ -152,9 +159,19 @@ def _from_status(code: int | None, status: str | None) -> ProviderError:
             status_code=code,
             hint="Aguarde alguns instantes ou verifique a cota do projeto.",
         )
+    if code == 404:
+        return ProviderRequestError(
+            f"O modelo '{model}' não existe ou não está liberado para esta chave ({label}).",
+            provider=PROVIDER_NAME,
+            status_code=code,
+            hint=f"Ajuste OPTIMUS_MODEL no .env. {MODELS_HINT}",
+        )
     if code is not None and code >= 500:
         return ProviderUnavailableError(
-            f"O Gemini está indisponível ({label}).", provider=PROVIDER_NAME, status_code=code
+            f"O Gemini está indisponível para o modelo '{model}' ({label}).",
+            provider=PROVIDER_NAME,
+            status_code=code,
+            hint=UNAVAILABLE_HINT,
         )
     return ProviderRequestError(
         f"O Gemini rejeitou a requisição ({label}).",

@@ -91,6 +91,7 @@ class ClaudeProvider(SDKProvider):
             ),
             provider=PROVIDER_NAME,
             model=raw.model or self.model,
+            requested_model=self.model,
         )
 
     def _translate_error(self, exc: Exception) -> ProviderError:
@@ -105,7 +106,7 @@ class ClaudeProvider(SDKProvider):
                 hint="Verifique a internet, proxy ou firewall.",
             )
         if isinstance(exc, anthropic.APIStatusError):
-            return _from_status(exc.status_code, _retry_after(exc))
+            return _from_status(exc.status_code, _retry_after(exc), self.model)
         return super()._translate_error(exc)
 
 
@@ -117,7 +118,7 @@ def _retry_after(exc: anthropic.APIStatusError) -> float | None:
         return None
 
 
-def _from_status(code: int, retry_after: float | None) -> ProviderError:
+def _from_status(code: int, retry_after: float | None, model: str) -> ProviderError:
     label = f"HTTP {code}"
     if code in (401, 403):
         return ProviderAuthError(
@@ -133,12 +134,20 @@ def _from_status(code: int, retry_after: float | None) -> ProviderError:
             status_code=code,
             retry_after_seconds=retry_after,
         )
+    if code == 404:
+        return ProviderRequestError(
+            f"O modelo '{model}' não existe ou não está liberado para esta chave ({label}).",
+            provider=PROVIDER_NAME,
+            status_code=code,
+            hint="Ajuste OPTIMUS_MODEL no .env com um modelo Claude válido.",
+        )
     if code >= 500:  # inclui 529 (sobrecarga)
         return ProviderUnavailableError(
-            f"O Claude está indisponível ({label}).",
+            f"O Claude está indisponível para o modelo '{model}' ({label}).",
             provider=PROVIDER_NAME,
             status_code=code,
             retry_after_seconds=retry_after,
+            hint="O serviço pode estar sobrecarregado. Tente de novo em instantes.",
         )
     return ProviderRequestError(
         f"O Claude rejeitou a requisição ({label}).",

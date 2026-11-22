@@ -98,8 +98,19 @@ class LLMResponse(DomainModel):
     usage: TokenUsage = TokenUsage()
     provider: str
     model: str
+    requested_model: str | None = None
     latency_ms: int = Field(default=0, ge=0)
     attempts: int = Field(default=1, ge=1)
+
+    @property
+    def model_redirected(self) -> bool:
+        """True quando a API serviu um modelo diferente do pedido.
+
+        Sufixos de versão (``gemini-x`` → ``gemini-x-001``) não contam.
+        """
+        if not self.requested_model:
+            return False
+        return not self.model.startswith(self.requested_model)
 
     @property
     def truncated(self) -> bool:

@@ -33,7 +33,7 @@ class LogLevel(StrEnum):
 
 
 DEFAULT_MODELS: dict[ProviderName, str] = {
-    ProviderName.GEMINI: "gemini-2.5-pro",
+    ProviderName.GEMINI: "gemini-3.5-flash",
     ProviderName.CLAUDE: "claude-sonnet-5-5",
 }
 

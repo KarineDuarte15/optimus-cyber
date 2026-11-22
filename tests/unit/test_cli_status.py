@@ -13,7 +13,7 @@ runner = CliRunner()
 def test_status_without_keys() -> None:
     result = runner.invoke(app, ["status"])
     assert result.exit_code == 0
-    assert "gemini-2.5-pro" in result.output
+    assert "gemini-3.5-flash" in result.output
     assert "ausente" in result.output
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+import time
 from collections.abc import Awaitable, Callable
 
 from optimus_cyber.core.errors import ProviderTransientError
@@ -68,11 +69,14 @@ class RetryingProvider(LLMProvider):
 
     async def generate(self, request: LLMRequest) -> LLMResponse:
         attempt = 1
+        started = time.perf_counter()
         while True:
             try:
                 response = await self._inner.generate(request)
             except ProviderTransientError as exc:
                 if attempt > self._max_retries:
+                    exc.attempts = attempt
+                    exc.elapsed_seconds = time.perf_counter() - started
                     raise
                 delay = self.delay_for(attempt, exc.retry_after_seconds)
                 log_event(

@@ -41,7 +41,7 @@ versionado. Variáveis do sistema têm prioridade sobre o `.env`.
 | `GEMINI_API_KEY` | — | Chave do Gemini |
 | `ANTHROPIC_API_KEY` | — | Chave do Claude |
 | `OPTIMUS_PROVIDER` | `gemini` | `gemini` ou `claude` |
-| `OPTIMUS_MODEL` | padrão do provider | `gemini-2.5-pro` / `claude-sonnet-5-5` |
+| `OPTIMUS_MODEL` | padrão do provider | `gemini-3.5-flash` / `claude-sonnet-5-5` |
 | `OPTIMUS_TEMPERATURE` | `0.2` | 0 a 2 (o Claude atual não aceita e ignora) |
 | `OPTIMUS_MAX_OUTPUT_TOKENS` | `8192` | Limite da resposta (no Gemini 2.5 inclui o raciocínio) |
 | `OPTIMUS_REQUEST_TIMEOUT_SECONDS` | `120` | Timeout por chamada |
@@ -52,6 +52,27 @@ versionado. Variáveis do sistema têm prioridade sobre o `.env`.
 
 Os logs nunca incluem chaves nem o conteúdo de perguntas e respostas: registram provider,
 modelo, tokens, latência e erros, sempre passando por redação de segredos.
+
+## Modelos
+
+O padrão do Gemini é `gemini-3.5-flash`. Os modelos 2.5 (inclusive o `gemini-2.5-pro` citado no
+documento de requisitos) só funcionam para contas que já os usavam: chaves novas recebem
+HTTP 404, mesmo que o modelo apareça na listagem.
+
+Para ver os modelos que a sua chave enxerga (o comando não exibe a chave):
+
+```powershell
+py -c "from google import genai; from optimus_cyber.config.settings import load_settings; k=load_settings().gemini_api_key; c=genai.Client(api_key=k.get_secret_value()); print('\n'.join(m.name for m in c.models.list() if 'gemini' in m.name))"
+```
+
+| Erro | Causa provável | O que fazer |
+| --- | --- | --- |
+| 404 NOT_FOUND | Modelo inexistente ou não liberado para a chave | Trocar `OPTIMUS_MODEL` |
+| 503 / 504 | Modelo sobrecarregado (comum em lançamentos recentes) | Tentar depois ou usar outro modelo |
+| 429 | Cota ou limite de requisições | Aguardar ou rever a cota no AI Studio |
+
+A linha de metadados do `optimus ask` mostra o modelo que a API realmente usou. Quando ele é
+diferente do pedido, aparecem os dois (ex.: `gemini-3.5-flash → gemini-3.6-flash`).
 
 ## Uso da camada de LLM no código
 

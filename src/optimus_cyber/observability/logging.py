@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -54,6 +55,22 @@ class RedactingFilter(logging.Filter):
         return value
 
 
+class CurrentStderrHandler(logging.StreamHandler):  # type: ignore[type-arg]
+    """Escreve no ``sys.stderr`` vigente no momento de cada registro.
+
+    O spinner do Rich troca ``sys.stderr`` por um proxy que imprime acima da
+    animação; um ``StreamHandler`` comum guardaria o stderr antigo e
+    escreveria por cima do spinner.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(sys.stderr)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.setStream(sys.stderr)
+        super().emit(record)
+
+
 class JsonFormatter(logging.Formatter):
     """Uma linha JSON por registro."""
 
@@ -92,7 +109,7 @@ def configure_logging(
         log_file.parent.mkdir(parents=True, exist_ok=True)
         handlers.append(logging.FileHandler(log_file, encoding="utf-8"))
     if debug:
-        handlers.append(logging.StreamHandler())  # stderr
+        handlers.append(CurrentStderrHandler())
     if not handlers:
         handlers.append(logging.NullHandler())
 
